@@ -14,12 +14,20 @@ class CadastroPlantaView extends StatefulWidget {
 }
 
 class _CadastroPlantaViewState extends State<CadastroPlantaView> {
+  bool carregandoTela = false;
+
   @override
   void initState() {
     super.initState();
+    setState(() {
+      carregandoTela = true;
+    });
     Future.microtask(
       () => Provider.of<PlantaProvider>(context, listen: false).fetchItems(),
     );
+    setState(() {
+      carregandoTela = false;
+    });
   }
 
   @override
@@ -53,15 +61,18 @@ class _CadastroPlantaViewState extends State<CadastroPlantaView> {
       ),
       body: Consumer<PlantaProvider>(
         builder: (context, provider, child) {
-          if (provider.items.isEmpty) {
+          if (carregandoTela) {
             return const Center(child: CircularProgressIndicator());
           }
-          return ListView.builder(
-            itemCount: provider.items.length,
-            itemBuilder: (context, index) {
-              final item = provider.items[index];
-              return _buildItem(context, item, provider);
-            },
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: ListView.builder(
+              itemCount: provider.items.length,
+              itemBuilder: (context, index) {
+                final item = provider.items[index];
+                return _buildItem(context, item, provider);
+              },
+            ),
           );
         },
       ),
@@ -73,26 +84,29 @@ class _CadastroPlantaViewState extends State<CadastroPlantaView> {
     PlantaModel item,
     PlantaProvider provider,
   ) {
-    return Card(
-      child: ListTile(
-        title: Text(item.nome),
-        subtitle: Text(
-          'Data: ${DateFormat('dd/MM/yyyy').format(item.timestamp)}',
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4.0),
+      child: Card(
+        child: ListTile(
+          title: Text(item.nome),
+          subtitle: Text(
+            'Data: ${DateFormat('dd/MM/yyyy').format(item.timestamp)}',
+          ),
+          trailing: IconButton(
+            icon: const Icon(Icons.remove_circle, color: Colors.red),
+            onPressed: () => _confirmarExclusao(context, provider, item.id),
+          ),
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CadastroPlantaForm(plantaModel: item),
+              ),
+            ).then((value) async {
+              await provider.fetchItems();
+            });
+          },
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.remove_circle, color: Colors.red),
-          onPressed: () => _confirmarExclusao(context, provider, item.id),
-        ),
-        onTap: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CadastroPlantaForm(plantaModel: item),
-            ),
-          ).then((value) async {
-            await provider.fetchItems();
-          });
-        },
       ),
     );
   }
