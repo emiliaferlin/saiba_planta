@@ -13,7 +13,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   Gemini.init(
-    apiKey: "AIzaSyC0hYsgk8ebzDmDotWHgWV7PcOP6Cv9ho4",
+    apiKey: "AIzaSyCPW_u-VXRfkjS3immMhVCQvPvwWW2pVeA",
     enableDebugging: true,
   );
 

@@ -57,7 +57,7 @@ class LoginViewState extends State<LoginView> {
     if (!isInitialize) {
       await _googleSignIn.initialize(
         serverClientId:
-            '580459873949-tqimr72d8564cn5dcotdh0cvrhd23usa.apps.googleusercontent.com',
+            '945547363766-vdakkfvsl4u2j2igtminioq65tevjeiu.apps.googleusercontent.com',
       );
     }
     isInitialize = true;
