@@ -3,6 +3,7 @@ class PlantaModel {
   String nome;
   String caracteristicas;
   String cuidados;
+  String imagemUrl;
   DateTime timestamp;
 
   PlantaModel({
@@ -10,6 +11,7 @@ class PlantaModel {
     required this.nome,
     required this.caracteristicas,
     required this.cuidados,
+    required this.imagemUrl,
     required this.timestamp,
   });
 
@@ -18,6 +20,7 @@ class PlantaModel {
       "nome": nome,
       "caracteristicas": caracteristicas,
       "cuidados": cuidados,
+      "imagemUrl": imagemUrl,
       "timestamp": timestamp.toIso8601String(),
     };
   }
@@ -28,6 +31,7 @@ class PlantaModel {
       nome: map["nome"],
       caracteristicas: map["caracteristicas"],
       cuidados: map["cuidados"],
+      imagemUrl: map["imagemUrl"],
       timestamp: DateTime.parse(map["timestamp"].toString()),
     );
   }
