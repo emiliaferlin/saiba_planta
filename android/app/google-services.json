@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "945547363766",
+    "project_id": "trabalho-final-cee76",
+    "storage_bucket": "trabalho-final-cee76.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:945547363766:android:c11070e333e824e16aed17",
+        "android_client_info": {
+          "package_name": "com.example.trabalho_final"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "945547363766-vdakkfvsl4u2j2igtminioq65tevjeiu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7reVOgw3yILV2WL47XHm--Bd_tSU4F7A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "945547363766-vdakkfvsl4u2j2igtminioq65tevjeiu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
