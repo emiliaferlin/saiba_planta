@@ -1,8 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:trabalho_final/main.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'package:flutter_gemini/flutter_gemini.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path/path.dart' as path;
+
+import 'package:trabalho_final/main.dart';
+import 'package:trabalho_final/src/model/planta_model.dart';
+import 'package:trabalho_final/src/services/planta_dao.dart';
 
 class IdentificacaoImagemView extends StatefulWidget {
   const IdentificacaoImagemView({super.key});
@@ -13,12 +19,14 @@ class IdentificacaoImagemView extends StatefulWidget {
 }
 
 class _IdentificacaoImagemViewState extends State<IdentificacaoImagemView> {
-  InputImage? inputImage;
   bool isScanning = false;
+  bool isPickingImage = false;
+  bool contemPlanta = false;
+
   XFile? imageFile;
   String result = "";
+  String nomeDetectado = "";
 
-  // Tradutor local (Inglês → Português)
   late OnDeviceTranslator onDeviceTranslator;
   final modelManager = OnDeviceTranslatorModelManager();
 
@@ -28,9 +36,7 @@ class _IdentificacaoImagemViewState extends State<IdentificacaoImagemView> {
     inicializarTradutor();
   }
 
-  /// Inicializa o tradutor e garante o download dos modelos de tradução
   Future<void> inicializarTradutor() async {
-    // Faz o download dos modelos se necessário
     await modelManager.downloadModel(TranslateLanguage.english.bcpCode);
     await modelManager.downloadModel(TranslateLanguage.portuguese.bcpCode);
 
@@ -61,26 +67,53 @@ class _IdentificacaoImagemViewState extends State<IdentificacaoImagemView> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            imageFile == null ? Container() : Image.file(File(imageFile!.path)),
-            const SizedBox(height: 40.0),
+            imageFile == null
+                ? const SizedBox()
+                : Image.file(File(imageFile!.path), height: 200),
+            const SizedBox(height: 30),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Text(
                 result,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16.0),
+                style: const TextStyle(fontSize: 16),
               ),
             ),
-            const SizedBox(height: 40.0),
+            const SizedBox(height: 40),
+
+            if (contemPlanta)
+              SizedBox(
+                width: MediaQuery.of(context).size.width / 2,
+                child: ElevatedButton(
+                  onPressed:
+                      isScanning
+                          ? null
+                          : () async {
+                            if (imageFile != null) {
+                              await cadastrarPlanta(nomeDetectado, imageFile!);
+                            }
+                          },
+                  child:
+                      isScanning
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text("Cadastrar planta"),
+                ),
+              ),
+            const SizedBox(height: 20),
             SizedBox(
               width: MediaQuery.of(context).size.width / 2,
               child: ElevatedButton(
-                onPressed: () {
-                  showImageSourceDialog(context);
-                },
-                child: const Text("Checar Imagem"),
+                onPressed:
+                    isScanning
+                        ? null
+                        : () async {
+                          await showImageSourceDialog(context);
+                        },
+                child:
+                    isScanning
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("Checar Imagem"),
               ),
             ),
           ],
@@ -89,32 +122,33 @@ class _IdentificacaoImagemViewState extends State<IdentificacaoImagemView> {
     );
   }
 
-  /// Escolhe imagem da galeria ou câmera
+  /// Pega a imagem da galeria ou câmera
   void pickImage(ImageSource source) async {
-    var pickedImage = await ImagePicker().pickImage(
-      source: source,
-      maxHeight: 200,
-      maxWidth: 200,
-    );
-    Navigator.of(context).pop();
+    if (isPickingImage) return;
+    isPickingImage = true;
 
     try {
+      final pickedImage = await ImagePicker().pickImage(
+        source: source,
+        maxHeight: 200,
+        maxWidth: 200,
+      );
+      Navigator.of(context).pop();
+
       if (pickedImage != null) {
         imageFile = pickedImage;
         setState(() {});
-        processImage(pickedImage);
+        await processImage(pickedImage);
       }
     } catch (e) {
-      isScanning = false;
-      imageFile = null;
-      result = "Erro ao processar imagem!";
-      setState(() {});
-      debugPrint("Exception: $e");
+      setState(() => result = "Erro ao processar imagem!");
+    } finally {
+      isPickingImage = false;
     }
   }
 
-  /// Processa a imagem e faz a tradução dos rótulos
-  Future<void> processImage(XFile image) async {
+  /// Processa a imagem e identifica se é planta
+  processImage(XFile image) async {
     setState(() {
       isScanning = true;
       result = "Processando imagem...";
@@ -124,23 +158,26 @@ class _IdentificacaoImagemViewState extends State<IdentificacaoImagemView> {
     final imageLabeler = ImageLabeler(
       options: ImageLabelerOptions(confidenceThreshold: 0.75),
     );
+    final labels = await imageLabeler.processImage(inputImage);
 
-    final List<ImageLabel> labels = await imageLabeler.processImage(inputImage);
     final StringBuffer sb = StringBuffer();
+    contemPlanta = false;
 
-    for (ImageLabel imgLabel in labels) {
-      final String lblText = imgLabel.label;
-      final double confidence = imgLabel.confidence;
-
-      // Tradução do rótulo detectado
-      final String translatedLabel = await onDeviceTranslator.translateText(
-        lblText,
+    for (final label in labels) {
+      final translatedLabel = await onDeviceTranslator.translateText(
+        label.label,
+      );
+      sb.writeln(
+        "$translatedLabel : ${(label.confidence * 100).toStringAsFixed(2)}%",
       );
 
-      sb.write("$translatedLabel ");
-      sb.write(" : ");
-      sb.write((confidence * 100).toStringAsFixed(2));
-      sb.write("%\n");
+      if (translatedLabel.toLowerCase().contains("planta") ||
+          translatedLabel.toLowerCase().contains("flor") ||
+          translatedLabel.toLowerCase().contains("árvore") ||
+          translatedLabel.toLowerCase().contains("folha")) {
+        contemPlanta = true;
+        nomeDetectado = translatedLabel;
+      }
     }
 
     imageLabeler.close();
@@ -151,20 +188,81 @@ class _IdentificacaoImagemViewState extends State<IdentificacaoImagemView> {
     });
   }
 
-  /// Mostra o diálogo para escolher a origem da imagem
-  void showImageSourceDialog(BuildContext context) {
+  /// Cadastra planta e envia imagem para Firebase Storage
+  cadastrarPlanta(String nome, XFile imagemSelecionada) async {
+    try {
+      setState(() => isScanning = true);
+
+      //Upload da imagem para o Storage
+      final storageRef = FirebaseStorage.instance.ref();
+      final fileName =
+          'planta_${DateTime.now().millisecondsSinceEpoch}${path.extension(imagemSelecionada.path)}';
+      final imageRef = storageRef.child('plantas/$fileName');
+
+      await imageRef.putFile(File(imagemSelecionada.path));
+
+      //Pega URL pública da imagem
+      final imageUrl = await imageRef.getDownloadURL();
+
+      // Gera características e cuidados com Gemini
+      final caracteristicas = await Gemini.instance.prompt(
+        parts: [
+          Part.text(
+            "Liste em formato de tópicos 3 características principais da planta $nome.",
+          ),
+        ],
+      );
+
+      final cuidados = await Gemini.instance.prompt(
+        parts: [
+          Part.text(
+            "Liste 3 cuidados essenciais para cultivar a planta $nome.",
+          ),
+        ],
+      );
+
+      // Cria objeto e salva no Firestore
+      final novaPlanta = PlantaModel(
+        id: "",
+        timestamp: DateTime.now(),
+        nome: nome,
+        caracteristicas: caracteristicas?.output ?? "",
+        cuidados: cuidados?.output ?? "",
+        imagemUrl: imageUrl,
+      );
+
+      await PlantaDao().add(novaPlanta);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Planta '$nome' cadastrada com sucesso!")),
+        );
+      }
+    } catch (e) {
+      debugPrint("Erro ao cadastrar planta: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Erro ao cadastrar planta")),
+        );
+      }
+    } finally {
+      setState(() => isScanning = false);
+    }
+  }
+
+  /// Mostra diálogo para escolher origem da imagem
+  showImageSourceDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
+      builder: (context) {
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             const Padding(
               padding: EdgeInsets.all(16.0),
               child: Text(
                 "Como deseja importar a imagem?",
-                style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             ListTile(
