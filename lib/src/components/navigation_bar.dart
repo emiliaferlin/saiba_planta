@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:trabalho_final/main.dart';
 import 'package:trabalho_final/src/view/cadastro_planta/cadastro_planta_view.dart';
+import 'package:trabalho_final/src/view/chat/chat_view.dart';
 import 'package:trabalho_final/src/view/identificacao_imagem/identificacao_imagem_view.dart';
 import 'package:trabalho_final/src/view/logout/logout_view.dart';
 
@@ -18,6 +19,7 @@ class _BottomNavigationBarAppState extends State<BottomNavigationBarApp> {
   static const List<Widget> pagesOptions = <Widget>[
     CadastroPlantaView(),
     IdentificacaoImagemView(),
+    ChatView(),
     LogoutView(),
   ];
 
@@ -53,6 +55,10 @@ class _BottomNavigationBarAppState extends State<BottomNavigationBarApp> {
           BottomNavigationBarItem(
             icon: Icon(Icons.image_outlined),
             label: 'Imagem',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_outlined),
+            label: 'Chat',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.logout_outlined),
