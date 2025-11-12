@@ -123,8 +123,8 @@ class LoginViewState extends State<LoginView> {
       resizeToAvoidBottomInset: true,
       body: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          child: Center(
+        child: Center(
+          child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
