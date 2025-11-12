@@ -7,6 +7,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:trabalho_final/main.dart';
+import 'package:trabalho_final/src/components/textfield_personalizado.dart';
 import 'package:trabalho_final/src/model/planta_model.dart';
 import 'package:trabalho_final/src/services/planta_dao.dart';
 
@@ -19,6 +20,7 @@ class IdentificacaoImagemView extends StatefulWidget {
 }
 
 class _IdentificacaoImagemViewState extends State<IdentificacaoImagemView> {
+  TextEditingController? controladorNome = TextEditingController();
   bool isScanning = false;
   bool isPickingImage = false;
   bool contemPlanta = false;
@@ -65,24 +67,69 @@ class _IdentificacaoImagemViewState extends State<IdentificacaoImagemView> {
         backgroundColor: primaryColor,
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            imageFile == null
-                ? const SizedBox()
-                : Image.file(File(imageFile!.path), height: 200),
-            const SizedBox(height: 30),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Text(
-                result,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              imageFile == null
+                  ? const SizedBox()
+                  : Image.file(File(imageFile!.path), height: 200),
+              const SizedBox(height: 30),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Text(
+                  result,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                ),
               ),
-            ),
-            const SizedBox(height: 40),
-
-            if (contemPlanta)
+              const SizedBox(height: 40),
+              Visibility(
+                visible: contemPlanta,
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    bottom: 16.0,
+                    left: 32.0,
+                    right: 32.0,
+                  ),
+                  child: TextfieldPersonalizado(
+                    controlador: controladorNome,
+                    rotulo: "Nome da planta",
+                  ),
+                ),
+              ),
+              if (contemPlanta)
+                SizedBox(
+                  width: MediaQuery.of(context).size.width / 2,
+                  child: ElevatedButton(
+                    onPressed:
+                        isScanning
+                            ? null
+                            : () async {
+                              if (imageFile != null) {
+                                if (controladorNome?.text.isNotEmpty == true) {
+                                  await cadastrarPlanta(
+                                    controladorNome?.text ?? nomeDetectado,
+                                    imageFile!,
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text("Insira um nome antes! "),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                    child:
+                        isScanning
+                            ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                            : const Text("Cadastrar planta"),
+                  ),
+                ),
+              const SizedBox(height: 20),
               SizedBox(
                 width: MediaQuery.of(context).size.width / 2,
                 child: ElevatedButton(
@@ -90,33 +137,16 @@ class _IdentificacaoImagemViewState extends State<IdentificacaoImagemView> {
                       isScanning
                           ? null
                           : () async {
-                            if (imageFile != null) {
-                              await cadastrarPlanta(nomeDetectado, imageFile!);
-                            }
+                            await showImageSourceDialog(context);
                           },
                   child:
                       isScanning
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text("Cadastrar planta"),
+                          : const Text("Checar Imagem"),
                 ),
               ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: MediaQuery.of(context).size.width / 2,
-              child: ElevatedButton(
-                onPressed:
-                    isScanning
-                        ? null
-                        : () async {
-                          await showImageSourceDialog(context);
-                        },
-                child:
-                    isScanning
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text("Checar Imagem"),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -208,7 +238,8 @@ class _IdentificacaoImagemViewState extends State<IdentificacaoImagemView> {
       final caracteristicas = await Gemini.instance.prompt(
         parts: [
           Part.text(
-            "Liste em formato de tópicos 3 características principais da planta $nome.",
+            "Liste em formato de tópicos 3 características principais da planta $nome. "
+            "Responda de forma curta e fácil de entender e coloque os tópicos em números (1., 2., 3.).",
           ),
         ],
       );
@@ -216,7 +247,8 @@ class _IdentificacaoImagemViewState extends State<IdentificacaoImagemView> {
       final cuidados = await Gemini.instance.prompt(
         parts: [
           Part.text(
-            "Liste 3 cuidados essenciais para cultivar a planta $nome.",
+            "Liste em formato de tópicos 3 cuidados essenciais para cultivar a planta $nome. "
+            "Inclua dicas práticas e curtas e coloque os tópicos em números (1., 2., 3.).",
           ),
         ],
       );

@@ -85,7 +85,7 @@ class CadastroPlantaFormState extends State<CadastroPlantaForm> {
                       ),
 
                       // Exibir imagem da internet (PNG)
-                      if (imagemUrl != null && imagemUrl!.isNotEmpty)
+                      if (imagemUrl != null && imagemUrl?.isNotEmpty == true)
                         Center(
                           child: Image.network(
                             imagemUrl!,
