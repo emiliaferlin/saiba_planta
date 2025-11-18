@@ -5,6 +5,7 @@ import 'package:trabalho_final/src/provider/planta_provider.dart';
 import 'package:trabalho_final/src/view/login/auth_view.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'firebase_options.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 Color primaryColor = Colors.green[400]!;
 
@@ -17,12 +18,20 @@ void main() async {
     enableDebugging: true,
   );
 
+  await _setupPushNotification();
   runApp(
     ChangeNotifierProvider(
       create: (context) => PlantaProvider(),
       child: const MyApp(),
     ),
   );
+}
+
+Future<void> _setupPushNotification() async {
+  final fcm = FirebaseMessaging.instance;
+  await fcm.requestPermission();
+  final token = await fcm.getToken();
+  print(token);
 }
 
 class MyApp extends StatelessWidget {

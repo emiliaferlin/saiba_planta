@@ -46,6 +46,10 @@ flutter {
     source = "../.."
 }
 
-dependencies{
+dependencies {
     "com.google.android.gms:play-services-auth:20.4.1"
+}
+
+configurations.all {
+    exclude(group = "com.google.firebase", module = "firebase-iid")
 }
